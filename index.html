@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Simple Firebase Voting</title>
+  <link rel="stylesheet" href="style.css">
+<script type="module" src="script.js"></script>
+
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto;max-width:760px;margin:2rem auto;padding:0 1rem}
+    .card{border:1px solid #ddd;padding:1rem;margin:0.6rem 0;border-radius:8px}
+    button{padding:0.5rem 0.9rem;border-radius:6px}
+    .muted{color:#666;font-size:0.9rem}
+  </style>
+</head>
+<body>
+  <h2>Simple Cloud Voting (Firebase)</h2>
+
+  <div id="auth" class="card">
+    <h3>Sign up / Sign in</h3>
+    <input id="email" placeholder="email" /><br/><br/>
+    <input id="password" placeholder="password" type="password" /><br/><br/>
+    <button id="signup">Sign up</button>
+    <button id="login">Sign in</button>
+    <button id="logout" style="display:none">Sign out</button>
+    <p id="userInfo" class="muted"></p>
+  </div>
+
+  <div id="verify" class="card" style="display:none">
+    <h3>Verify Voter ID</h3>
+    <input id="voterId" placeholder="Enter your voter ID (e.g. 2025-STD-001)" />
+    <button id="verifyBtn">Verify ID</button>
+    <p id="verifyMsg" class="muted"></p>
+  </div>
+
+  <div id="voting" class="card" style="display:none">
+    <h3>Vote — Candidates</h3>
+    <div id="candidatesList" class="muted">Loading candidates...</div>
+  </div>
+
+  <div id="admin" class="card" style="display:none">
+    <h3>Admin panel (simple)</h3>
+    <input id="newCandidate" placeholder="Candidate name" />
+    <button id="addCandidate">Add candidate</button>
+    <hr/>
+    <input id="addVoterId" placeholder="New voter ID (key)" />
+    <input id="addVoterName" placeholder="Voter name" />
+    <button id="addVoter">Add voter</button>
+    <p class="muted">Admin = specific emails hardcoded in client for simplicity.</p>
+    <button id="showTally">Show tally (live)</button>
+    <div id="tally"></div>
+  </div>
+
+  <script type="module">
+    // ---- FIREBASE SDK (modular) ----
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import {
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import {
+      getFirestore, doc, setDoc, getDoc, collection, getDocs,
+      runTransaction, updateDoc, addDoc, query, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // TODO: paste your config here
+    const firebaseConfig = { /* YOUR FIREBASE CONFIG */ };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- simple admin emails (change to your admin emails) ---
+    const ADMINS = ["admin@example.com"];
+
+    // UI refs
+    const emailEl = document.getElementById('email');
+    const passEl = document.getElementById('password');
+    const signupBtn = document.getElementById('signup');
+    const loginBtn = document.getElementById('login');
+    const logoutBtn = document.getElementById('logout');
+    const userInfo = document.getElementById('userInfo');
+
+    const verifySection = document.getElementById('verify');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const voterIdEl = document.getElementById('voterId');
+    const verifyMsg = document.getElementById('verifyMsg');
+
+    const votingSection = document.getElementById('voting');
+    const candidatesList = document.getElementById('candidatesList');
+
+    const adminSection = document.getElementById('admin');
+    const addCandidateBtn = document.getElementById('addCandidate');
+    const newCandidateEl = document.getElementById('newCandidate');
+    const addVoterBtn = document.getElementById('addVoter');
+    const addVoterIdEl = document.getElementById('addVoterId');
+    const addVoterNameEl = document.getElementById('addVoterName');
+    const showTallyBtn = document.getElementById('showTally');
+    const tallyDiv = document.getElementById('tally');
+
+    // Auth handlers
+    signupBtn.onclick = async () => {
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+        // optionally create user doc
+        await setDoc(doc(db, 'users', userCred.user.uid), { email: userCred.user.email, createdAt: Date.now() });
+      } catch (e) { alert(e.message) }
+    };
+    loginBtn.onclick = async () => {
+      try { await signInWithEmailAndPassword(auth, emailEl.value, passEl.value); }
+      catch (e) { alert(e.message) }
+    };
+    logoutBtn.onclick = () => signOut(auth);
+
+    // Auth state
+    let currentUser = null;
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+      if (user) {
+        userInfo.textContent = `Signed in: ${user.email} (uid: ${user.uid})`;
+        logoutBtn.style.display = 'inline-block';
+        signupBtn.style.display = loginBtn.style.display = 'none';
+        verifySection.style.display = 'block';
+        // show admin if user.email in ADMINS
+        if (ADMINS.includes(user.email)) adminSection.style.display = 'block';
+        else adminSection.style.display = 'none';
+      } else {
+        userInfo.textContent = `Not signed in`;
+        logoutBtn.style.display = 'none';
+        signupBtn.style.display = loginBtn.style.display = 'inline-block';
+        verifySection.style.display = 'none';
+        votingSection.style.display = 'none';
+        adminSection.style.display = 'none';
+      }
+    });
+
+    // Verify voterID
+    verifyBtn.onclick = async () => {
+      if (!currentUser) return alert('Sign in first');
+      const vid = voterIdEl.value.trim();
+      if (!vid) return alert('Enter voterID');
+      const voterRef = doc(db, 'voters', vid);
+      const voterSnap = await getDoc(voterRef);
+      if (!voterSnap.exists()) {
+        verifyMsg.textContent = 'Voter ID not found. Ask admin to add you.';
+        return;
+      }
+      const v = voterSnap.data();
+      if (v.used) {
+        verifyMsg.textContent = 'This voter ID has already been used to vote.';
+        return;
+      }
+      // link voterID to user (basic)
+      await setDoc(doc(db, 'users', currentUser.uid), { email: currentUser.email, voterID: vid }, { merge: true });
+      await updateDoc(voterRef, { uid: currentUser.uid, isVerified: true });
+      verifyMsg.textContent = 'Verified. You can now vote.';
+      // show voting UI
+      loadCandidates();
+      votingSection.style.display = 'block';
+    };
+
+    // Load and show candidates (live)
+    function loadCandidates() {
+      const col = collection(db, 'candidates');
+      onSnapshot(col, snap => {
+        candidatesList.innerHTML = '';
+        snap.forEach(docu => {
+          const c = docu.data();
+          const btn = document.createElement('button');
+          btn.textContent = `Vote for ${c.name}`;
+          btn.onclick = () => castVote(docu.id);
+          const div = document.createElement('div');
+          div.className = 'card';
+          div.innerHTML = `<strong>${c.name}</strong> — votes: ${c.votes ?? 0} `;
+          div.appendChild(btn);
+          candidatesList.appendChild(div);
+        });
+      });
+    }
+
+    // Cast vote using transaction (prevents double vote)
+    async function castVote(candidateId) {
+      if (!currentUser) return alert('Sign in first');
+      // get user's voterID
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (!userDoc.exists() || !userDoc.data().voterID) return alert('You must verify your voter ID first.');
+      const voterID = userDoc.data().voterID;
+      const voterRef = doc(db, 'voters', voterID);
+      const candidateRef = doc(db, 'candidates', candidateId);
+
+      try {
+        await runTransaction(db, async (t) => {
+          const vSnap = await t.get(voterRef);
+          if (!vSnap.exists()) throw 'Voter record missing';
+          const vData = vSnap.data();
+          if (vData.used) throw 'Already voted';
+
+          const cSnap = await t.get(candidateRef);
+          if (!cSnap.exists()) throw 'Candidate missing';
+
+          // mark voter used and set votedFor
+          t.update(voterRef, { used: true, votedFor: candidateId, votedAt: Date.now(), uid: currentUser.uid });
+          // increment candidate votes (safe transaction)
+          const newVotes = (cSnap.data().votes ?? 0) + 1;
+          t.update(candidateRef, { votes: newVotes });
+        });
+        alert('Vote cast successfully ✅');
+      } catch (e) {
+        alert('Vote failed: ' + e);
+      }
+    }
+
+    // Admin actions (very simple)
+    addCandidateBtn.onclick = async () => {
+      const name = newCandidateEl.value.trim(); if (!name) return;
+      await addDoc(collection(db, 'candidates'), { name, votes: 0 });
+      newCandidateEl.value = '';
+      alert('Candidate added');
+    };
+    addVoterBtn.onclick = async () => {
+      const vid = addVoterIdEl.value.trim(); const name = addVoterNameEl.value.trim();
+      if (!vid || !name) return alert('fill both');
+      await setDoc(doc(db, 'voters', vid), { name, used: false, uid: null, isVerified: false });
+      addVoterIdEl.value = addVoterNameEl.value = '';
+      alert('Voter added');
+    };
+    showTallyBtn.onclick = async () => {
+      const snap = await getDocs(collection(db, 'candidates'));
+      tallyDiv.innerHTML = '';
+      snap.forEach(d=> tallyDiv.innerHTML += `<div>${d.data().name} — ${d.data().votes ?? 0}</div>`);
+    };
+
+  </script>
+</body>
+</html>
