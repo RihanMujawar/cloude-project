@@ -1,38 +1,217 @@
-.App {
+/* 🌟 Reset and Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: #f4f6f9;
+  color: #333;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 🌟 Navbar */
+nav {
+  background: #4a90e2;
+  padding: 14px 24px;
+  text-align: center;
+  gap: 24px;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+nav a {
+  color: #eb3636;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+nav a:hover {
+  color: #ffdd57;
+}
+
+/* 🌟 Page Wrapper */
+.page-container, form {
+  background: white;
+  max-width: 450px;
+  width: 100%;
+  margin: 50px auto;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+h2 {
+  margin-bottom: 25px;
+  color: #4a90e2;
+  font-size: 24px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* 🌟 Inputs */
+input {
+  width: 100%;
+  padding: 14px;
+  margin: 12px 0;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  transition: 0.3s;
+  font-size: 15px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+input:focus {
+  border-color: #4a90e2;
+  outline: none;
+  box-shadow: 0 0 5px rgba(74,144,226,0.6);
+}
+
+/* 🌟 Buttons */
+button {
+  width: 100px;
+  height: 47px;
+  padding: 14px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 10px;
+  background: #4a90e2;
   color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 15px;
 }
 
-.App-link {
-  color: #61dafb;
+button:hover {
+  background: #357ab8;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* 🌟 Lists (Vote & Results) */
+ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 25px;
+}
+
+li {
+  background: #f9f9f9;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.3s;
+}
+
+li:hover {
+  background: #eef6ff;
+}
+
+/* Candidate Vote Button */
+li button {
+  width: auto;
+  padding: 7px 14px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ff6b6b;
+}
+
+li button:hover {
+  background: #e55353;
+}
+
+/* 🌟 Results highlight */
+.result-highlight {
+  margin-top: 20px;
+  padding: 18px;
+  background: #e0f7e9;
+  border: 1px solid #28a745;
+  border-radius: 10px;
+  font-weight: bold;
+  color: #155724;
+  font-size: 15px;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+  nav {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
   }
-  to {
-    transform: rotate(360deg);
+
+  nav a {
+    font-size: 15px;
+  }
+
+  .page-container, form {
+    width: 90%;
+    margin: 30px auto;
+    padding: 22px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  input, button {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  li button {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  nav {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  nav a {
+    font-size: 14px;
+  }
+
+  .page-container, form {
+    width: 95%;
+    padding: 18px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  input, button {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  li {
+    font-size: 14px;
   }
 }

@@ -18,6 +18,7 @@ export default function Admin() {
 
   const addCandidate = async (e) => {
     e.preventDefault();
+    if (!name || !party) return;
     await addDoc(collection(db, "candidates"), {
       name,
       party,
@@ -34,19 +35,54 @@ export default function Admin() {
   };
 
   return (
-    <div>
+    <div className="page-container">
       <h2>Admin Panel</h2>
-      <form onSubmit={addCandidate}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Candidate Name" />
-        <input value={party} onChange={(e) => setParty(e.target.value)} placeholder="Party" />
+
+      {/* 🔹 Add Candidate Form */}
+      <form onSubmit={addCandidate} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <input 
+          value={name} 
+          onChange={(e) => setName(e.target.value)} 
+          placeholder="Candidate Name" 
+        />
+        <input 
+          value={party} 
+          onChange={(e) => setParty(e.target.value)} 
+          placeholder="Party" 
+        />
         <button type="submit">Add Candidate</button>
       </form>
 
-      <ul>
+      {/* 🔹 Candidates List */}
+      <ul style={{ marginTop: "25px" }}>
         {candidates.map(c => (
-          <li key={c.id}>
-            {c.name} - {c.party}
-            <button onClick={() => removeCandidate(c.id)}>Delete</button>
+          <li key={c.id} style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px",
+            marginBottom: "12px",
+            borderRadius: "10px",
+            background: "#f9f9f9",
+            transition: "0.3s"
+          }}>
+            <div>
+              <strong>{c.name}</strong> - {c.party} ({c.voteCount} votes)
+            </div>
+            <button 
+              onClick={() => removeCandidate(c.id)} 
+              style={{
+                background: "#ff6b6b",
+                color: "white",
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                transition: "0.3s"
+              }}
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>

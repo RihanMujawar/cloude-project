@@ -8,10 +8,15 @@ export default function Results() {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
+    // 🔹 Listen to candidates collection
     const unsubCandidates = onSnapshot(collection(db, "candidates"), (snapshot) => {
-      setCandidates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // 🔹 Sort descending by voteCount
+      data.sort((a, b) => b.voteCount - a.voteCount);
+      setCandidates(data);
     });
 
+    // 🔹 Listen to auth changes
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
       if (u) {
         const snap = await getDoc(doc(db, "users", u.uid));
@@ -25,11 +30,20 @@ export default function Results() {
     };
   }, []);
 
+  // 🔹 Candidate user voted for
   const votedCandidate = candidates.find(c => c.id === userData?.votedFor);
 
   return (
-    <div>
+    <div className="page-container">
       <h2>Live Results</h2>
+
+      {/* 🔹 Highlight user's vote first */}
+      {userData?.hasVoted && votedCandidate && (
+        <div className="result-highlight">
+          ✅ You voted for: {votedCandidate.name} ({votedCandidate.party})
+        </div>
+      )}
+
       <ul>
         {candidates.map(c => (
           <li key={c.id}>
@@ -37,12 +51,6 @@ export default function Results() {
           </li>
         ))}
       </ul>
-
-      {userData?.hasVoted && votedCandidate && (
-        <div style={{ marginTop: "20px", fontWeight: "bold", color: "green" }}>
-          ✅ You voted for: {votedCandidate.name} ({votedCandidate.party})
-        </div>
-      )}
     </div>
   );
 }

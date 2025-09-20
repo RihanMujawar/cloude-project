@@ -6,6 +6,7 @@ import Vote from "./components/Vote";
 import Results from "./components/Results";
 import AdminRoute from "./components/AdminRoute";
 import NavBar from "./components/NavBar";
+import "./App.css";
 
 
 function App() {

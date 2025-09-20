@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { auth, db } from "../firebase";
+import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -12,26 +12,18 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // Step 1: Find email from registerNumber
-      const q = query(
-        collection(db, "users"),
-        where("registerNumber", "==", registerNumber)
-      );
-      const snapshot = await getDocs(q);
+      // 👇 RegisterNumber ko email ki tarah use karenge
+      const fakeEmail = `${registerNumber}@college.com`;
 
-      if (snapshot.empty) {
-        alert("Register number not found!");
-        return;
+      const res = await signInWithEmailAndPassword(auth, fakeEmail, password);
+      const userDoc = await getDoc(doc(db, "users", res.user.uid));
+      const userData = userDoc.data();
+
+      if (userData?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/vote");
       }
-
-      const userData = snapshot.docs[0].data();
-      const email = userData.email;
-
-      // Step 2: Sign in with found email + password
-      await signInWithEmailAndPassword(auth, email, password);
-
-      alert("Login successful!");
-      navigate("/vote");
     } catch (err) {
       alert(err.message);
     }
@@ -41,7 +33,6 @@ export default function Login() {
     <form onSubmit={handleLogin}>
       <h2>Login</h2>
       <input
-        type="text"
         placeholder="Register Number"
         value={registerNumber}
         onChange={(e) => setRegisterNumber(e.target.value)}
