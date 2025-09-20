@@ -1,28 +1,31 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function Vote() {
   const [candidates, setCandidates] = useState([]);
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        const snap = await getDoc(doc(db, "users", u.uid));
-        setUserData(snap.data());
+      if (!u) {
+        navigate("/login"); // 🔒 not logged in → back to login
+        return;
       }
+      setUser(u);
+      const snap = await getDoc(doc(db, "users", u.uid));
+      setUserData(snap.data());
     });
     return () => unsub();
-  }, []);
+  }, [navigate]);
 
   const fetchCandidates = async () => {
     const snapshot = await getDocs(collection(db, "candidates"));
-    setCandidates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setCandidates(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   };
 
   useEffect(() => {
@@ -39,14 +42,11 @@ export default function Vote() {
       return;
     }
 
-    // Increment candidate vote count
     const candidateRef = doc(db, "candidates", candidateId);
     const candidateSnap = await getDoc(candidateRef);
     const newCount = candidateSnap.data().voteCount + 1;
 
     await updateDoc(candidateRef, { voteCount: newCount });
-
-    // Mark user as voted
     await updateDoc(doc(db, "users", user.uid), { hasVoted: true });
 
     alert("Vote cast successfully!");

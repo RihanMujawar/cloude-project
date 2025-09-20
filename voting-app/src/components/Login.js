@@ -16,10 +16,11 @@ export default function Login() {
       const userDoc = await getDoc(doc(db, "users", res.user.uid));
       const userData = userDoc.data();
 
+      // 👇 always send voter to vote page
       if (userData?.role === "admin") {
-        navigate("/admin");   // 🚀 admin panel
+        navigate("/admin");
       } else {
-        navigate("/vote");    // 🚀 normal user
+        navigate("/vote");
       }
     } catch (err) {
       alert(err.message);
