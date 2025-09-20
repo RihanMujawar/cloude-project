@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth, db } from "../firebase";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -10,21 +10,19 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    console.log("Register clicked", { email, password, name });
     try {
       const res = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("Auth created:", res.user);
 
       await setDoc(doc(db, "users", res.user.uid), {
         name,
         email,
+        role: "voter",
         voterId: "VID-" + Math.floor(100000 + Math.random() * 900000),
         hasVoted: false,
       });
 
       alert("Registered successfully!");
     } catch (err) {
-      console.error("Register error:", err);
       alert(err.message);
     }
   };
