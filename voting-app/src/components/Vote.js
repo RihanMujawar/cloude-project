@@ -12,20 +12,22 @@ export default function Vote() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        navigate("/login"); // 🔒 not logged in → back to login
-        return;
-      }
       setUser(u);
-      const snap = await getDoc(doc(db, "users", u.uid));
-      setUserData(snap.data());
+      if (u) {
+        const snap = await getDoc(doc(db, "users", u.uid));
+        setUserData(snap.data());
+
+        if (snap.data()?.hasVoted) {
+          navigate("/results");
+        }
+      }
     });
     return () => unsub();
   }, [navigate]);
 
   const fetchCandidates = async () => {
     const snapshot = await getDocs(collection(db, "candidates"));
-    setCandidates(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    setCandidates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
   useEffect(() => {
@@ -39,25 +41,32 @@ export default function Vote() {
     }
     if (userData.hasVoted) {
       alert("You have already voted!");
+      navigate("/results");
       return;
     }
 
+    // Increment candidate vote count
     const candidateRef = doc(db, "candidates", candidateId);
     const candidateSnap = await getDoc(candidateRef);
     const newCount = candidateSnap.data().voteCount + 1;
 
     await updateDoc(candidateRef, { voteCount: newCount });
-    await updateDoc(doc(db, "users", user.uid), { hasVoted: true });
+
+    // Mark user as voted + save candidate choice
+    await updateDoc(doc(db, "users", user.uid), {
+      hasVoted: true,
+      votedFor: candidateId,
+    });
 
     alert("Vote cast successfully!");
-    fetchCandidates();
+    navigate("/results");
   };
 
   return (
     <div>
       <h2>Vote for your Candidate</h2>
-      {userData?.hasVoted ? (
-        <p>You have already voted!</p>
+      {!userData ? (
+        <p>Loading...</p>
       ) : (
         <ul>
           {candidates.map((c) => (

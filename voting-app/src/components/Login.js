@@ -1,27 +1,37 @@
-import React, { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { useState } from "react";
 import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [registerNumber, setRegisterNumber] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", res.user.uid));
-      const userData = userDoc.data();
+      // Step 1: Find email from registerNumber
+      const q = query(
+        collection(db, "users"),
+        where("registerNumber", "==", registerNumber)
+      );
+      const snapshot = await getDocs(q);
 
-      // 👇 always send voter to vote page
-      if (userData?.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/vote");
+      if (snapshot.empty) {
+        alert("Register number not found!");
+        return;
       }
+
+      const userData = snapshot.docs[0].data();
+      const email = userData.email;
+
+      // Step 2: Sign in with found email + password
+      await signInWithEmailAndPassword(auth, email, password);
+
+      alert("Login successful!");
+      navigate("/vote");
     } catch (err) {
       alert(err.message);
     }
@@ -31,10 +41,10 @@ export default function Login() {
     <form onSubmit={handleLogin}>
       <h2>Login</h2>
       <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        type="text"
+        placeholder="Register Number"
+        value={registerNumber}
+        onChange={(e) => setRegisterNumber(e.target.value)}
         required
       />
       <input
