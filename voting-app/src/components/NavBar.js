@@ -33,36 +33,61 @@ export default function NavBar() {
   };
 
   return (
-    <nav style={{ padding: "10px", backgroundColor: "#f0f0f0" }}>
+    <nav
+      style={{
+        background: "#eaeaeaff",
+        padding: "12px 20px",
+        display: "flex",
+        justifyContent: "center",
+        gap: "20px",
+        borderRadius: "0 0 12px 12px",
+        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+      }}
+    >
       {/* Not logged in */}
       {!user && (
         <>
-          <Link to="/login" style={{ marginRight: "10px" }}>Login</Link>
-          <Link to="/register" style={{ marginRight: "10px" }}>Register</Link>
+          <Link to="/login" style={linkStyle}>Login</Link>
+          <Link to="/register" style={linkStyle}>Register</Link>
         </>
       )}
 
       {/* Voter logged in */}
       {user && role === "voter" && (
         <>
-          <Link to="/vote" style={{ marginRight: "10px" }}>Vote</Link>
-          <Link to="/results" style={{ marginRight: "10px" }}>Results</Link>
-          <button onClick={handleLogout} style={{ marginLeft: "20px" }}>
-            Logout
-          </button>
+          <Link to="/vote" style={linkStyle}>Vote</Link>
+          <Link to="/results" style={linkStyle}>Results</Link>
+          <button onClick={handleLogout} style={btnStyle}>Logout</button>
         </>
       )}
 
       {/* Admin logged in */}
       {user && role === "admin" && (
         <>
-          <Link to="/admin" style={{ marginRight: "10px" }}>Admin</Link>
-          <Link to="/results" style={{ marginRight: "10px" }}>Results</Link>
-          <button onClick={handleLogout} style={{ marginLeft: "20px" }}>
-            Logout
-          </button>
+          <Link to="/admin" style={linkStyle}>Admin</Link>
+          <Link to="/results" style={linkStyle}>Results</Link>
+          <button onClick={handleLogout} style={btnStyle}>Logout</button>
         </>
       )}
     </nav>
   );
 }
+
+const linkStyle = {
+  color: "#ff3b3bff",
+  textDecoration: "none",
+  fontWeight: "500",
+  transition: "0.3s",
+};
+
+const btnStyle = {
+
+  background: "#44bffdff",
+  border: "1px solid white",
+  borderRadius: "6px",
+  padding: "6px 12px",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: "500",
+  transition: "0.3s",
+};

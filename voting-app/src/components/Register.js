@@ -1,17 +1,19 @@
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [name, setName] = useState("");
   const [registerNumber, setRegisterNumber] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      // 👇 Email ki jagah RegisterNumber + dummy domain use karenge
+      // 👇 Fake email banayenge Firebase ke liye
       const fakeEmail = `${registerNumber}@college.com`;
 
       const res = await createUserWithEmailAndPassword(auth, fakeEmail, password);
@@ -23,7 +25,12 @@ export default function Register() {
         hasVoted: false,
       });
 
-      alert("Registered successfully!");
+      alert("Registered successfully! Please login now.");
+
+      // 👇 Register ke turant baad logout & redirect
+      await signOut(auth);
+      navigate("/login");
+
     } catch (err) {
       alert(err.message);
     }
